@@ -83,3 +83,24 @@ function refreshList() {
     tasks.forEach(addListItem); 
   }
 }
+
+async function fetchTasks() {
+  try {
+      const response = await fetch('https://jsonplaceholder.typicode.com/todos');
+      if (!response.ok) {
+        throw new Error('Data not Found');
+      }
+      const data = await response.json();
+      tasks = data.map((item: any) => ({
+        userId: item.userId,
+        id: item.id,
+        title: item.title,
+        completed: false,
+      }));
+      tasks.forEach(addListItem);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+fetchTasks();
