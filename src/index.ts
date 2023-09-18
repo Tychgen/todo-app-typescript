@@ -1,4 +1,4 @@
-import {v4 as uuidV4} from 'uuid'
+import { v4 as uuidV4 } from 'uuid';
 
 type Task = {
   userId: number;
@@ -16,7 +16,7 @@ const list = document.querySelector<HTMLUListElement>('#list');
 const form = document.getElementById('new-task-form') as HTMLFormElement | null;
 const input = document.querySelector<HTMLInputElement>('#new-task-title');
 
-let tasks: Task[] = [];
+let tasks: Task[] = loadTasks();
 tasks.forEach(addListItem);
 
 form?.addEventListener('submit', (e) => {
@@ -37,6 +37,8 @@ form?.addEventListener('submit', (e) => {
     ...newTask,
   });
 
+  saveTasks(tasks);
+
   addListItem({
     userId: 1,
     id: id,
@@ -51,6 +53,7 @@ function addListItem(task: Task) {
   const checkbox = document.createElement('input');
   checkbox.addEventListener('change', () => {
     task.completed = checkbox.checked;
+    saveTasks(tasks);
     if (task.completed) {
       item.classList.add('completed-task');
     } else {
@@ -61,46 +64,61 @@ function addListItem(task: Task) {
   checkbox.checked = task.completed;
   label.append(checkbox, task.title);
 
- 
   const removeButton = document.createElement('button');
   removeButton.innerText = 'Remove';
   removeButton.addEventListener('click', () => {
     removeTask(task.id);
   });
 
-  item.append(label, removeButton); 
+  item.append(label, removeButton);
   list?.append(item);
 }
 
 function removeTask(id: string) {
   tasks = tasks.filter((task) => task.id !== id);
+  saveTasks(tasks);
   refreshList();
 }
 
 function refreshList() {
   if (list) {
-    list.innerHTML = ''; 
-    tasks.forEach(addListItem); 
+    list.innerHTML = '';
+    tasks.forEach(addListItem);
   }
+}
+
+function saveTasks(tasks: Task[]) {
+  localStorage.setItem('TASKS', JSON.stringify(tasks));
+}
+
+function loadTasks(): Task[] {
+  const taskJSON = localStorage.getItem('TASKS');
+  if (taskJSON == null) return [];
+  return JSON.parse(taskJSON);
 }
 
 async function fetchTasks() {
   try {
-      const response = await fetch('https://jsonplaceholder.typicode.com/todos');
-      if (!response.ok) {
-        throw new Error('Data not Found');
-      }
-      const data = await response.json();
-      tasks = data.map((item: any) => ({
-        userId: item.userId,
-        id: item.id,
-        title: item.title,
-        completed: false,
-      }));
-      tasks.forEach(addListItem);
+    const response = await fetch('https://jsonplaceholder.typicode.com/todos');
+    if (!response.ok) {
+      throw new Error('Data not Found');
+    }
+    const data = await response.json();
+    const newTasks = data.map((item: any) => ({
+      userId: item.userId,
+      id: item.id,
+      title: item.title,
+      completed: false,
+    }));
+    tasks = [...tasks, ...newTasks];
+    saveTasks(tasks);
+    newTasks.forEach(addListItem);
   } catch (error) {
     console.error('Error:', error);
   }
 }
 
-fetchTasks();
+if (!localStorage.getItem('dataFetched')) {
+  fetchTasks();
+  localStorage.setItem('dataFetched', 'true');
+}
